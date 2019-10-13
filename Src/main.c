@@ -29,6 +29,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -101,10 +102,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start(&hadc1); // You have to start ADC
+  HAL_ADC_Start_DMA(&hadc1, Joystick, 2); // You have to start ADC with DMA
   HAL_GPIO_WritePin(TEST_GPIO_Port, TEST_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
@@ -112,25 +114,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_WritePin(TEST_GPIO_Port, TEST_Pin, GPIO_PIN_SET);
-	  if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-	  {
-		  Joystick[0] = HAL_ADC_GetValue(&hadc1); // Get X value
-		  ADC_SetActiveChannel(&hadc1, ADC_CHANNEL_7);
-		  HAL_ADC_Start(&hadc1);
-	  }
-	  HAL_GPIO_WritePin(TEST_GPIO_Port, TEST_Pin, GPIO_PIN_RESET);
 
-	  HAL_GPIO_WritePin(TEST_GPIO_Port, TEST_Pin, GPIO_PIN_SET);
-	  if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-	  {
-		  Joystick[1] = HAL_ADC_GetValue(&hadc1); // Get Y value
-		  ADC_SetActiveChannel(&hadc1, ADC_CHANNEL_6);
-		  HAL_ADC_Start(&hadc1);
-	  }
-	  HAL_GPIO_WritePin(TEST_GPIO_Port, TEST_Pin, GPIO_PIN_RESET);
-
-	  sprintf((char*)UartMessage, "X: %d, Y: %d\n\r", Joystick[0], Joystick[1]);
+	  sprintf((char*)UartMessage, "X: %d, Y: %d\n\r", (int)Joystick[0], (int)Joystick[1]);
 	  UART2_Print(UartMessage);
     /* USER CODE END WHILE */
 
@@ -183,18 +168,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void ADC_SetActiveChannel(ADC_HandleTypeDef *hadc, uint32_t AdcChannel)
-{
-	ADC_ChannelConfTypeDef sConfig = {0};
-	sConfig.Channel = AdcChannel;
-	sConfig.Rank = 1;
-	sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-	if (HAL_ADC_ConfigChannel(hadc, &sConfig) != HAL_OK)
-	{
-	  Error_Handler();
-	}
-}
-
 void UART2_Print(uint8_t* Message)
 {
 	HAL_UART_Transmit(&huart2, Message, strlen((char*)Message), 100);
