@@ -30,6 +30,7 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -105,8 +106,10 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_ADC1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start_DMA(&hadc1, Joystick, 2); // You have to start ADC with DMA
+  HAL_TIM_Base_Start(&htim2);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)Joystick, 2); // You have to start ADC with DMA
   HAL_GPIO_WritePin(TEST_GPIO_Port, TEST_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
@@ -168,6 +171,15 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	if(hadc->Instance == hadc1.Instance)
+	{
+		HAL_GPIO_TogglePin(TEST_GPIO_Port, TEST_Pin);
+	}
+}
+
 void UART2_Print(uint8_t* Message)
 {
 	HAL_UART_Transmit(&huart2, Message, strlen((char*)Message), 100);
